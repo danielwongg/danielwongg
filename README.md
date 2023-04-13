@@ -14,3 +14,17 @@ Here are some ideas to get you started:
 - 😄 Pronouns: ...
 - ⚡ Fun fact: ...
 -->
+
+```sql -- Add 3 backticks followed by sql
+SELECT *
+FROM student_info
+WHERE student_name = 'Daniel';
+```
+
+```sql
+SELECT * FROM whatever
+WHERE something = "LOL"
+AND that IS NOT NULL
+OR this IS NULL
+ORDER BY that desc;
+```
