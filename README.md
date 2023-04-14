@@ -26,7 +26,7 @@ In the first week after a customer joins the program (including their join date)
 
 ### 1. What is the total amount each customer spent at the restaurant?
 ```sql
-SELECT sales.customer_id, SUM(price) AS "TotalSales"
+SELECT sales.customer_id, SUM(price) AS TotalSales
 FROM dannys_diner.sales
 JOIN dannys_diner.menu ON sales.product_id=menu.product_id
 GROUP BY customer_id
@@ -52,7 +52,7 @@ From the query above we see that customer A spent $76,  customer B spent $74, an
 ### 2. How many days has each customer visited the restaurant?
 
 ```sql
-SELECT sales.customer_id, COUNT(DISTINCT(order_date)) as "TimesVisited"
+SELECT sales.customer_id, COUNT(DISTINCT(order_date)) as TimesVisited
 FROM dannys_diner.sales
 GROUP BY customer_id;
 ```
@@ -78,9 +78,9 @@ From the query above we see that customer A visited 4 times, customer B visited 
 ````sql
 WITH order_ranked AS
 (
-	SELECT customer_id, order_date, product_name
+	SELECT customer_id, order_date, product_name,
 	DENSE_RANK() OVER(PARTITION BY sales.customer_id order by sales.order_date)
-	as rank
+	as ranking
 	FROM dannys_diner.sales
 	JOIN dannys_diner.menu
   	ON sales.product_id=menu.product_id
@@ -88,78 +88,83 @@ WITH order_ranked AS
 
 SELECT customer_id, product_name
 FROM order_ranked
-WHERE rank = 1
+WHERE ranking = 1
 GROUP BY customer_id, product_name;
 ````
 
 #### Reasoning
 - Using a **MIN** function on ```order_date``` combined with the ```product_name``` would not work as it would provide me the the earliest time each customer ordered each menu item, rather than the first item they had ordered
-- Creating a CTE with a **DENSE_RANK** function, a **PARTITION BY** function, and a **ORDER_BY** function provides each product order by the customer to be assigned a rank
+- Creating a CTE with a **DENSE_RANK** function, a **PARTITION BY** function, and a **ORDER_BY** function provides each product ordered by the customer to be assigned a rank, seperated by ```customer_id```
 - **DENSE_RANK** is used instead of **RANK** as the data does not indicate which product was ordered earlier on the same date
-- Using the CTE, I then can filter the first product ordered by each customer based on the rank provided
+- Using the CTE, I then can filter the first product ordered by each customer based on the ranking provided with **GROUP BY**
 
 #### Answer:
 | customer_id | product_name | 
 | ----------- | ----------- |
-| A           | curry        | 
 | A           | sushi        | 
+| A           | curry        | 
 | B           | curry        | 
 | C           | ramen        |
 
-From the above query, customer A's first orders are curry and sushi, customer B's first order is curry, and customer C's first order is ramen.
+From the above query, customer A's first orders are sushi and curry, customer B's first order is curry, and customer C's first order is ramen.
 
 ***
 
 ### 4. What is the most purchased item on the menu and how many times was it purchased by all customers?
 
 ````sql
-SELECT TOP 1 (COUNT(s.product_id)) AS most_purchased, product_name
-FROM dbo.sales AS s
-JOIN dbo.menu AS m
-   ON s.product_id = m.product_id
-GROUP BY s.product_id, product_name
-ORDER BY most_purchased DESC;
+SELECT product_name, COUNT(sales.product_id) AS TimesOrdered
+FROM dannys_diner.sales
+JOIN dannys_diner.menu
+ON sales.product_id=menu.product_id
+GROUP BY sales.product_id, product_name
+ORDER BY COUNT(sales.product_id) DESC;
 ````
 
-#### Steps:
-- **COUNT** number of ```product_id``` and **ORDER BY** ```most_purchased``` by descending order. 
-- Then, use **TOP 1** to filter highest number of purchased item.
+#### Reasoning
+- Conduct a **COUNT** of ```product_id``` for the number of orders made by customers
+- **GROUP BY** ```product_name``` to seperate how many times each product was ordered
+- Use **ORDER BY** in descending order to identify which product was ordered the most
 
 #### Answer:
-| most_purchased | product_name | 
+| product_name | TimesOrdered | 
 | ----------- | ----------- |
-| 8       | ramen |
+| ramen       | 8	 |
+| curry       | 4	 |
+| sushi       | 3	 |
 
 
-- Most purchased item on the menu is ramen which is 8 times. Yummy!
+From the query above, we see that the most ordered product is ramen, with 8 orders total.
 
 ***
 
 ### 5. Which item was the most popular for each customer?
 
 ````sql
-WITH fav_item_cte AS
+WITH most_ordered AS
 (
-   SELECT s.customer_id, m.product_name, COUNT(m.product_id) AS order_count,
-      DENSE_RANK() OVER(PARTITION BY s.customer_id
-      ORDER BY COUNT(s.customer_id) DESC) AS rank
-   FROM dbo.menu AS m
-   JOIN dbo.sales AS s
-      ON m.product_id = s.product_id
-   GROUP BY s.customer_id, m.product_name
+    SELECT sales.customer_id, product_name, COUNT(sales.product_id) AS TimesOrdered,
+    DENSE_RANK() OVER (PARTITION BY sales.customer_id
+    ORDER BY COUNT(sales.product_id) DESC)
+    AS ranking
+    FROM dannys_diner.sales
+    JOIN dannys_diner.menu
+    ON sales.product_id=menu.product_id
+    GROUP BY sales.customer_id, menu.product_name
 )
 
-SELECT customer_id, product_name, order_count
-FROM fav_item_cte 
-WHERE rank = 1;
+SELECT customer_id, product_name, TimesOrdered
+FROM most_ordered
+WHERE ranking = 1;
 ````
 
-#### Steps:
-- Create a ```fav_item_cte``` and use **DENSE_RANK** to ```rank``` the ```order_count``` for each product by descending order for each customer.
-- Generate results where product ```rank = 1``` only as the most popular product for each customer.
+#### Reasoning
+- Similar to question #3, I created a CTE that uses **DENSE_RANK** to rank the number of times a product was ordered based on a similar table in question #4
+- I seperate the values/rankings with a **PARTITION BY** function on the ```customer_id``` and use a **ORDER BY** descending function on ```product_id```
+- I then further restrict the values to return only when the rank = 1 so that I don't return products ordered less(ie. a rank not equalt to 1)
 
 #### Answer:
-| customer_id | product_name | order_count |
+| customer_id | product_name | TimesOrdered |
 | ----------- | ---------- |------------  |
 | A           | ramen        |  3   |
 | B           | sushi        |  2   |
@@ -167,8 +172,7 @@ WHERE rank = 1;
 | B           | ramen        |  2   |
 | C           | ramen        |  3   |
 
-- Customer A and C's favourite item is ramen.
-- Customer B enjoys all items on the menu. He/she is a true foodie, sounds like me!
+From the query above, we see that customer A's most ordered product is ramen, customer B's most ordered product is an equal amount of curry, sushi, and ramen, and customer C's most ordered product is ramen.
 
 ***
 
