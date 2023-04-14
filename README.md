@@ -27,8 +27,8 @@ In the first week after a customer joins the program (including their join date)
 ### 1. What is the total amount each customer spent at the restaurant?
 ```sql
 SELECT sales.customer_id, SUM(price) AS TotalSales
-FROM dannys_diner.sales
-JOIN dannys_diner.menu ON sales.product_id=menu.product_id
+FROM sales
+JOIN menu ON sales.product_id=menu.product_id
 GROUP BY customer_id
 ORDER BY customer_id;
 ```
@@ -53,7 +53,7 @@ From the query above we see that customer A spent $76,  customer B spent $74, an
 
 ```sql
 SELECT sales.customer_id, COUNT(DISTINCT(order_date)) as TimesVisited
-FROM dannys_diner.sales
+FROM sales
 GROUP BY customer_id;
 ```
 
@@ -81,8 +81,8 @@ WITH order_ranked AS
 	SELECT customer_id, order_date, product_name,
 	DENSE_RANK() OVER(PARTITION BY sales.customer_id order by sales.order_date)
 	as ranking
-	FROM dannys_diner.sales
-	JOIN dannys_diner.menu
+	FROM sales
+	JOIN menu
   	ON sales.product_id=menu.product_id
 )
 
@@ -114,8 +114,8 @@ From the above query, customer A's first orders are sushi and curry, customer B'
 
 ````sql
 SELECT product_name, COUNT(sales.product_id) AS TimesOrdered
-FROM dannys_diner.sales
-JOIN dannys_diner.menu
+FROM sales
+JOIN menu
 ON sales.product_id=menu.product_id
 GROUP BY sales.product_id, product_name
 ORDER BY COUNT(sales.product_id) DESC;
@@ -147,8 +147,8 @@ WITH most_ordered AS
     DENSE_RANK() OVER (PARTITION BY sales.customer_id
     ORDER BY COUNT(sales.product_id) DESC)
     AS ranking
-    FROM dannys_diner.sales
-    JOIN dannys_diner.menu
+    FROM sales
+    JOIN menu
     ON sales.product_id=menu.product_id
     GROUP BY sales.customer_id, menu.product_name
 )
@@ -167,8 +167,8 @@ WHERE ranking = 1;
 | customer_id | product_name | TimesOrdered |
 | ----------- | ---------- |------------  |
 | A           | ramen        |  3   |
-| B           | sushi        |  2   |
 | B           | curry        |  2   |
+| B           | sushi        |  2   |
 | B           | ramen        |  2   |
 | C           | ramen        |  3   |
 
