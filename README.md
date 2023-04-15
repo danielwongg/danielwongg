@@ -96,7 +96,7 @@ GROUP BY customer_id, product_name;
 - Using a **MIN** function on ```order_date``` combined with the ```product_name``` would not work as it would provide me the the earliest time each customer ordered each menu item, rather than the first item they had ordered
 - Creating a CTE with a **DENSE_RANK** function, a **PARTITION BY** function, and a **ORDER_BY** function provides each product ordered by the customer to be assigned a rank, seperated by ```customer_id```
 - **DENSE_RANK** is used instead of **RANK** as the data does not indicate which product was ordered earlier on the same date
-- Using the CTE, I then can filter the first product ordered by each customer based on the ranking provided with **GROUP BY**
+- Using the CTE, I then can filter the first product ordered by each customer based on ranking = 1, and a following **GROUP BY** of ```customer_id``` and ```product_name```
 
 #### Answer:
 | customer_id | product_name | 
