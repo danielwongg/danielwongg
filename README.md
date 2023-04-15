@@ -52,7 +52,7 @@ From the query above we see that customer A spent $76,  customer B spent $74, an
 ### 2. How many days has each customer visited the restaurant?
 
 ```sql
-SELECT sales.customer_id, COUNT(DISTINCT(order_date)) as TimesVisited
+SELECT sales.customer_id, COUNT(DISTINCT(order_date)) AS TimesVisited
 FROM sales
 GROUP BY customer_id;
 ```
