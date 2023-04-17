@@ -183,7 +183,7 @@ From the query above, we see that customer A's most ordered product is ramen, cu
 ````sql
 WITH date_rank AS
 (
-	SELECT sales.customer_id, order_date, sales.product_id, join_date,
+    SELECT sales.customer_id, order_date, sales.product_id, join_date,
     ROW_NUMBER() OVER(PARTITION BY sales.customer_id
     ORDER BY order_date)
     AS ranking
