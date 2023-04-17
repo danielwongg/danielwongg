@@ -28,7 +28,8 @@ In the first week after a customer joins the program (including their join date)
 ```sql
 SELECT sales.customer_id, SUM(price) AS TotalSales
 FROM sales
-JOIN menu ON sales.product_id=menu.product_id
+JOIN menu
+ON sales.product_id=menu.product_id
 GROUP BY customer_id
 ORDER BY customer_id;
 ```
@@ -180,36 +181,40 @@ From the query above, we see that customer A's most ordered product is ramen, cu
 ### 6. Which item was purchased first by the customer after they became a member?
 
 ````sql
-WITH member_sales_cte AS 
+WITH date_rank AS
 (
-   SELECT s.customer_id, m.join_date, s.order_date, s.product_id,
-      DENSE_RANK() OVER(PARTITION BY s.customer_id
-      ORDER BY s.order_date) AS rank
-   FROM sales AS s
-   JOIN members AS m
-      ON s.customer_id = m.customer_id
-   WHERE s.order_date >= m.join_date
+	SELECT sales.customer_id, order_date, sales.product_id, join_date,
+    ROW_NUMBER() OVER(PARTITION BY sales.customer_id
+    ORDER BY order_date)
+    AS ranking
+    FROM sales
+    JOIN members
+    ON sales.customer_id=members.customer_id
+    WHERE order_date>=join_date
 )
 
-SELECT s.customer_id, s.order_date, m2.product_name 
-FROM member_sales_cte AS s
-JOIN menu AS m2
-   ON s.product_id = m2.product_id
-WHERE rank = 1;
+SELECT customer_id, product_name, order_date
+FROM date_rank
+JOIN menu
+ON date_rank.product_id=menu.product_id
+WHERE ranking = 1
+ORDER BY customer_id
+;
 ````
 
-#### Steps:
-- Create ```member_sales_cte``` by using **windows function** and partitioning ```customer_id``` by ascending ```order_date```. Then, filter ```order_date``` to be on or after ```join_date```.
-- Then, filter table by ```rank = 1``` to show 1st item purchased by each customer.
+#### Reasoning
+- Create ```date_rank``` CTE and include a **ROW_NUMBER** function to give each row a value, seperated by ```customer_id``` and ordered by ```order_date``` in ascending order
+- Join the ```members``` table with the ```sales``` table so that we can filter the results to only when ```order_date``` is greater or equal to the ```join_date```
+- Using the ```date_rank``` CTE, create a new select statement which joins the ```menu``` table as well, allowing us to know the name of the product ordered
+- Further restrict the results to where the row number(labeled as ranking) is equal to 1 to show the first product ordered after becoming a member
 
 #### Answer:
-| customer_id | order_date  | product_name |
+| customer_id | product_name | order_date |
 | ----------- | ---------- |----------  |
-| A           | 2021-01-07 | curry        |
-| B           | 2021-01-11 | sushi        |
+| A           | curry    | 2021-01-07    |
+| B           | sushi    | 2021-01-11    |
 
-- Customer A's first order as member is curry.
-- Customer B's first order as member is sushi.
+From the query above we see that the first product ordered by each customer after becoming a member was curry for customer A, and sushi for customer B.
 
 ***
 
