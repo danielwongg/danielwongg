@@ -204,9 +204,8 @@ ORDER BY customer_id
 
 #### Reasoning
 - Create ```date_rank``` CTE and include a **ROW_NUMBER** function to give each row a value, seperated by ```customer_id``` and ordered by ```order_date``` in ascending order
-- Join the ```members``` table with the ```sales``` table so that we can filter the results to only when ```order_date``` is greater or equal to the ```join_date```
-- Using the ```date_rank``` CTE, create a new select statement which joins the ```menu``` table as well, allowing us to know the name of the product ordered
-- Further restrict the results to where the row number(labeled as ranking) is equal to 1 to show the first product ordered after becoming a member
+- Join the ```members``` table and the ```menu``` table with the ```sales``` table so that we can filter the results to only when ```order_date``` is greater or equal to the ```join_date```
+- Using the ```date_rank``` CTE, create a new select statement to further restrict the results to where the row number(labeled as ranking) is equal to 1 to show the first product ordered after becoming a member
 
 #### Answer:
 | customer_id | product_name | order_date |
