@@ -260,10 +260,10 @@ From the query above, we see that customer A ordered both curry and sushi before
 SELECT sales.customer_id, COUNT(product_name) AS total_items, SUM(price) AS total_spent
 FROM sales
 JOIN menu
-ON menu.product_id = sales.product_id
+ON menu.product_id=sales.product_id
 JOIN members
-ON members.customer_id = sales.customer_id
-WHERE order_date < join_date
+ON members.customer_id=sales.customer_id
+WHERE order_date<join_date
 GROUP BY sales.customer_id
 ORDER BY sales.customer_id;
 ````
