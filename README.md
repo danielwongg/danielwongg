@@ -220,37 +220,39 @@ From the query above we see that the first product ordered by each customer afte
 ### 7. Which item was purchased just before the customer became a member?
 
 ````sql
-WITH prior_member_purchased_cte AS 
+WITH date_rank AS
 (
-   SELECT s.customer_id, m.join_date, s.order_date, s.product_id,
-         DENSE_RANK() OVER(PARTITION BY s.customer_id
-         ORDER BY s.order_date DESC) AS rank
-   FROM sales AS s
-   JOIN members AS m
-      ON s.customer_id = m.customer_id
-   WHERE s.order_date < m.join_date
+    SELECT sales.customer_id, order_date, join_date, product_name,
+    DENSE_RANK() OVER(PARTITION BY sales.customer_id
+    ORDER BY order_date DESC)
+    AS ranking
+    FROM sales
+    JOIN members
+    ON sales.customer_id=members.customer_id
+    JOIN menu
+    ON sales.product_id=menu.product_id
+    WHERE order_date<join_date
 )
 
-SELECT s.customer_id, s.order_date, m2.product_name 
-FROM prior_member_purchased_cte AS s
-JOIN menu AS m2
-   ON s.product_id = m2.product_id
-WHERE rank = 1;
+SELECT customer_id, product_name, order_date, join_date
+FROM date_rank
+WHERE ranking = 1
+GROUP BY customer_id , product_name , order_date , join_date;
 ````
 
-#### Steps:
-- Create a ```prior_member_purchased_cte``` to create new column ```rank``` by using **Windows function** and partitioning ```customer_id``` by descending ```order_date``` to find out the last ```order_date``` before customer becomes a member.
-- Filter ```order_date``` before ```join_date```.
+#### Reasoning
+- Similar to question 6, I used a CTE that ranks ```order_date``` but this time in descending order, seperated by ```customer_id```
+- Join both ```menu``` and ```members``` tables to the ```sales``` table, and restrict results to show all ```order_date``` that are less than ```join_date```
+- Using the CTE, create a new select statement to further restrict the results to where the row number(labeled as ranking) is equal to 1 to show the last product ordered before becoming a member
 
 #### Answer:
-| customer_id | order_date  | product_name |
-| ----------- | ---------- |----------  |
-| A           | 2021-01-01 |  sushi        |
-| A           | 2021-01-01 |  curry        |
-| B           | 2021-01-04 |  sushi        |
+| customer_id | product_name  | order_date | join_date |
+| ----------- | ---------- |----------  | ------------|
+| A           | curry |  2021-01-01     | 2021-01-07  |
+| A           | sushi |  2021-01-01     | 2021-01-07  |
+| B           | sushi |  2021-01-04     | 2021-01-09  |
 
-- Customer A’s last order before becoming a member is sushi and curry.
-- Whereas for Customer B, it's sushi. That must have been a real good sushi!
+From the query above, we see that customer A ordered both curry and sushi before becoming a member, and customer B ordered sushi before becoming a member.
 
 ***
 
