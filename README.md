@@ -26,7 +26,7 @@ In the first week after a customer joins the program (including their join date)
 
 ### 1. What is the total amount each customer spent at the restaurant?
 ```sql
-SELECT sales.customer_id, SUM(price) AS TotalSales
+SELECT sales.customer_id, SUM(price) AS total_sales
 FROM sales
 JOIN menu
 ON sales.product_id=menu.product_id
@@ -40,7 +40,7 @@ ORDER BY customer_id;
 -  The **ORDER BY** function is used to further sort the query by ```customer_id``` 
 
 #### Answer:
-| customer_id | TotalSales  |
+| customer_id | total_sales  |
 | ----------- | ----------- |
 | A           | 76          |
 | B           | 74          |
@@ -53,7 +53,7 @@ From the query above we see that customer A spent $76,  customer B spent $74, an
 ### 2. How many days has each customer visited the restaurant?
 
 ```sql
-SELECT sales.customer_id, COUNT(DISTINCT(order_date)) AS TimesVisited
+SELECT sales.customer_id, COUNT(DISTINCT(order_date)) AS times_visited
 FROM sales
 GROUP BY customer_id;
 ```
@@ -64,7 +64,7 @@ GROUP BY customer_id;
 - Filter the results by ```customer_id``` to see the number of times each customer visited
 
 #### Answer:
-| customer_id | TimesVisited |
+| customer_id | times_visited |
 | ----------- | ----------- |
 | A           | 4          |
 | B           | 6          |
@@ -115,7 +115,7 @@ From the above query, customer A's first orders are sushi and curry, customer B'
 ### 4. What is the most purchased item on the menu and how many times was it purchased by all customers?
 
 ````sql
-SELECT product_name, COUNT(sales.product_id) AS TimesOrdered
+SELECT product_name, COUNT(sales.product_id) AS times_ordered
 FROM sales
 JOIN menu
 ON sales.product_id=menu.product_id
@@ -129,7 +129,7 @@ ORDER BY COUNT(sales.product_id) DESC;
 - Use **ORDER BY** in descending order to identify which product was ordered the most
 
 #### Answer:
-| product_name | TimesOrdered | 
+| product_name | times_ordered | 
 | ----------- | ----------- |
 | ramen       | 8	 |
 | curry       | 4	 |
@@ -145,7 +145,7 @@ From the query above, we see that the most ordered product is ramen, with 8 orde
 ````sql
 WITH most_ordered AS
 (
-    SELECT sales.customer_id, product_name, COUNT(sales.product_id) AS TimesOrdered,
+    SELECT sales.customer_id, product_name, COUNT(sales.product_id) AS times_ordered,
     DENSE_RANK() OVER (PARTITION BY sales.customer_id
     ORDER BY COUNT(sales.product_id) DESC)
     AS ranking
@@ -166,7 +166,7 @@ WHERE ranking = 1;
 - I then further restrict the values to return only when the rank = 1 so that I don't return products ordered less(ie. a rank not equalt to 1)
 
 #### Answer:
-| customer_id | product_name | TimesOrdered |
+| customer_id | product_name | times_ordered |
 | ----------- | ---------- |------------  |
 | A           | ramen        |  3   |
 | B           | curry        |  2   |
@@ -198,8 +198,7 @@ WITH date_rank AS
 SELECT customer_id, product_name, order_date
 FROM date_rank
 WHERE ranking = 1
-ORDER BY customer_id
-;
+ORDER BY customer_id;
 ````
 
 #### Reasoning
@@ -236,8 +235,7 @@ WITH date_rank AS
 
 SELECT customer_id, product_name, order_date, join_date
 FROM date_rank
-WHERE ranking = 1
-GROUP BY customer_id , product_name , order_date , join_date;
+WHERE ranking = 1;
 ````
 
 #### Reasoning
@@ -247,9 +245,9 @@ GROUP BY customer_id , product_name , order_date , join_date;
 
 #### Answer:
 | customer_id | product_name  | order_date | join_date |
-| ----------- | ---------- |----------  | ------------|
-| A           | curry |  2021-01-01     | 2021-01-07  |
+| ----------- | ------ |--------------  | ------------|
 | A           | sushi |  2021-01-01     | 2021-01-07  |
+| A           | curry |  2021-01-01     | 2021-01-07  |
 | B           | sushi |  2021-01-04     | 2021-01-09  |
 
 From the query above, we see that customer A ordered both curry and sushi before becoming a member, and customer B ordered sushi before becoming a member.
@@ -259,30 +257,28 @@ From the query above, we see that customer A ordered both curry and sushi before
 ### 8. What is the total items and amount spent for each member before they became a member?
 
 ````sql
-SELECT s.customer_id, COUNT(DISTINCT s.product_id) AS unique_menu_item, 
-   SUM(mm.price) AS total_sales
-FROM sales AS s
-JOIN members AS m
-   ON s.customer_id = m.customer_id
-JOIN menu AS mm
-   ON s.product_id = mm.product_id
-WHERE s.order_date < m.join_date
-GROUP BY s.customer_id;
-
+SELECT sales.customer_id, COUNT(product_name) AS total_items, SUM(price) AS total_spent
+FROM sales
+JOIN menu
+ON menu.product_id = sales.product_id
+JOIN members
+ON members.customer_id = sales.customer_id
+WHERE order_date < join_date
+GROUP BY sales.customer_id
+ORDER BY sales.customer_id;
 ````
 
-#### Steps:
-- Filter ```order_date``` before ```join_date``` and perform a **COUNT** **DISTINCT** on ```product_id``` and **SUM** the ```total spent``` before becoming member.
+#### Reasoning
+- Use **COUNT** on ```product_name``` and **SUM** on ```price``` to figure out the total number of products ordered and the total amount spent
+- Join the ```menu``` and ```members``` table to the ```sales``` table, and restrict results for when ```order_date``` is less than the ```join_date```
 
 #### Answer:
-| customer_id | unique_menu_item | total_sales |
+| customer_id | total_items | total_spent |
 | ----------- | ---------- |----------  |
-| A           | 2 |  25       |
-| B           | 2 |  40       |
+| A           | 2          |  25       |
+| B           | 3          |  40       |
 
-Before becoming members,
-- Customer A spent $ 25 on 2 items.
-- Customer B spent $40 on 2 items.
+From the query above, we see that before becoming members, customer A spent $25 on 2 products, and customer B spent $40 on 3 products. Customer C never became a member, and therefore not included in the result set.
 
 ***
 
