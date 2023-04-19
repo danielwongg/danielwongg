@@ -285,87 +285,67 @@ From the query above, we see that before becoming members, customer A spent $25 
 ### 9. If each $1 spent equates to 10 points and sushi has a 2x points multiplier — how many points would each customer have?
 
 ````sql
-WITH price_points AS
-(
-   SELECT *, 
-      CASE
-         WHEN product_id = 1 THEN price * 20
-         ELSE price * 10
-      END AS points
-   FROM menu
-)
-
-SELECT s.customer_id, SUM(p.points) AS total_points
-FROM price_points_cte AS p
-JOIN sales AS s
-   ON p.product_id = s.product_id
-GROUP BY s.customer_id
+SELECT sales.customer_id,
+SUM(CASE
+WHEN product_name = 'sushi' THEN price * 20
+ELSE price * 10
+END) AS points
+FROM menu
+JOIN sales
+ON sales.product_id=menu.product_id
+GROUP BY sales.customer_id;
 ````
 
-#### Steps:
-Let’s breakdown the question.
-- Each $1 spent = 10 points.
-- But, sushi (product_id 1) gets 2x points, meaning each $1 spent = 20 points
-So, we use CASE WHEN to create conditional statements
-- If product_id = 1, then every $1 price multiply by 20 points
-- All other product_id that is not 1, multiply $1 by 10 points
-Using ```price_points```, **SUM** the ```points```.
+#### Reasoning
+- Use a **CASE** statement to seperate the different outcomes depending on ```product_name``` since sushi earns a different multiplier of points than other products
+- **JOIN** the sales table and **SUM** the case statement to get the point totals for each customer
+- **GROUP BY** to order the results based on ```customer_id```
 
 #### Answer:
-| customer_id | total_points | 
+| customer_id | points | 
 | ----------- | ---------- |
 | A           | 860 |
 | B           | 940 |
 | C           | 360 |
 
-- Total points for Customer A is 860.
-- Total points for Customer B is 940.
-- Total points for Customer C is 360.
+From the query above, customer A has 860 points, customer B has 940 points, and customer C has 360 points.
 
 ***
 
 ### 10. 10. In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not just sushi — how many points do customer A and B have at the end of January?
 
 ````sql
-WITH dates_cte AS 
-(
-   SELECT *, 
-      DATEADD(DAY, 6, join_date) AS valid_date, 
-      EOMONTH('2021-01-31') AS last_date
-   FROM members AS m
-)
-
-SELECT d.customer_id, s.order_date, d.join_date, d.valid_date, d.last_date, m.product_name, m.price,
-   SUM(CASE
-      WHEN m.product_name = 'sushi' THEN 2 * 10 * m.price
-      WHEN s.order_date BETWEEN d.join_date AND d.valid_date THEN 2 * 10 * m.price
-      ELSE 10 * m.price
-      END) AS points
-FROM dates_cte AS d
-JOIN sales AS s
-   ON d.customer_id = s.customer_id
-JOIN menu AS m
-   ON s.product_id = m.product_id
-WHERE s.order_date < d.last_date
-GROUP BY d.customer_id, s.order_date, d.join_date, d.valid_date, d.last_date, m.product_name, m.price
+SELECT sales.customer_id,
+SUM(CASE
+WHEN product_name = 'sushi' THEN price * 20
+WHEN order_date BETWEEN join_date AND DATE_ADD(join_date, INTERVAL 7 DAY) THEN price * 20
+ELSE price * 10
+END) AS points
+FROM menu
+JOIN sales
+ON sales.product_id=menu.product_id
+JOIN members
+ON sales.customer_id=members.customer_id
+WHERE order_date<=LAST_DAY('2021-01-01')
+GROUP BY sales.customer_id
+ORDER BY sales.customer_id
 ````
 
-#### Steps:
-- In ```dates_cte```, find out customer’s ```valid_date``` (which is 6 days after ```join_date``` and inclusive of ```join_date```) and ```last_day``` of Jan 2021 (which is ‘2021–01–31’).
-
-Our assumptions are:
-- On Day -X to Day 1 (customer becomes member on Day 1 ```join_date```), each $1 spent is 10 points and for sushi, each $1 spent is 20 points.
-- On Day 1 ```join_date``` to Day 7 ```valid_date```, each $1 spent for all items is 20 points.
-- On Day 8 to ```last_day``` of Jan 2021, each $1 spent is 10 points and sushi is 2x points.
+#### Reasoning
+- The first week after becoming a member(including the joining date), the customer earns 2x points - I chose to interpret the 2x points window as the member joining date, plus the full 7 days following; if the customer became a member on a Tuesday, their last day of the promotion would be the following Tuesday
+- I also chose to interpret that sushi does not earn the promotion twice(ie. 4x the points), and the promotion only applies to products that aren't sushi
+- Using a similar **CASE** statement as question #9, include an additional **WHEN** statement that provides the same multiplier on the price when the ```order_date``` is **BETWEEN** the ```join_date``` and the additional 7 days following
+- All other results that do not fall within the two **WHEN** statements have their points tallied as normal
+- Join both the ```sales``` and ```members``` tables to the ```menu``` table, and restrict all ```order_date``` to be less than or equal to the last day of January with a **LAST_DAY** function
+- Use a **GROUP BY** function to organize the results as there was an aggregate function used
 
 #### Answer:
-| customer_id | total_points | 
+| customer_id | points | 
 | ----------- | ---------- |
 | A           | 1370 |
-| B           | 820 |
+| B           | 940 |
 
-- Total points for Customer A is 1,370.
-- Total points for Customer B is 820.
+From the query above, we see that customer A earned 1370 points in the month of January, and customer B earned 940 points.
 
 ***
 
