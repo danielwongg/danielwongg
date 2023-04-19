@@ -314,7 +314,7 @@ From the query above, customer A has 860 points, customer B has 940 points, and 
 
 ***
 
-### 10. 10. In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not just sushi — how many points do customer A and B have at the end of January?
+### 10. In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not just sushi — how many points do customer A and B have at the end of January?
 
 ````sql
 SELECT sales.customer_id,
