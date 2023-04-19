@@ -334,8 +334,8 @@ ORDER BY sales.customer_id
 ````
 
 #### Reasoning
-- The first week after becoming a member(including the joining date), the customer earns 2x points - I chose to interpret the 2x points window as the member joining date, plus the full 7 days following; if the customer became a member on a Tuesday, their last day of the promotion would be the following Tuesday
-- I also chose to interpret that sushi does not earn the promotion twice(ie. 4x the points), and the promotion only applies to products that aren't sushi
+- I chose to interpret the 2x points window as the member joining date, plus the full 7 days following; if the customer became a member on a Tuesday, their last day of the promotion would be the following Tuesday
+- I also chose to interpret that sushi does not earn the promotion(ie. 4x the points), and the promotion only applies to products that aren't sushi
 - Using a similar **CASE** statement as question #9, include an additional **WHEN** statement that provides the same multiplier on the price when the ```order_date``` is **BETWEEN** the ```join_date``` and the additional 7 days following
 - All other results that do not fall within the two **WHEN** statements have their points tallied as normal
 - Join both the ```sales``` and ```members``` tables to the ```menu``` table, and restrict all ```order_date``` to be less than or equal to the last day of January with a **LAST_DAY** function
