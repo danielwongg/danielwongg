@@ -300,7 +300,7 @@ GROUP BY sales.customer_id;
 
 #### Reasoning
 - Use a **CASE** statement to seperate the different outcomes depending on ```product_name``` since sushi earns a different multiplier of points than other products
-- **JOIN** the sales table and **SUM** the case statement to get the point totals for each customer
+- **JOIN** the sales table and **SUM** the case statement to get the point totals for each ```customer_id```
 - **GROUP BY** to order the results based on ```customer_id```
 
 #### Answer:
