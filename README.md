@@ -1,17 +1,17 @@
 ### Hi there 👋
 
-8 Week SQL Challenge - Case Study #1: Danny's Diner
+### 8 Week SQL Challenge - Case Study #1: Danny's Diner
 
-Objective:
+## Objective:
 Use data to answer questions about customers, such as money spent, popular products, and frequency of visits.
 
 
-Entity Relationship Diagram:
+## Entity Relationship Diagram:
 
 ![image](https://user-images.githubusercontent.com/130705459/232967453-3cf780dc-3357-46df-9b2d-fa73ad576ce2.png)
 
 
-Case Study Questions:
+## Case Study Questions:
 1. What is the total amount each customer spent at the restaurant?
 2. How many days has each customer visited the restaurant?
 3. What was the first item from the menu purchased by each customer?
