@@ -330,7 +330,7 @@ JOIN members
 ON sales.customer_id=members.customer_id
 WHERE order_date<=LAST_DAY('2021-01-01')
 GROUP BY sales.customer_id
-ORDER BY sales.customer_id
+ORDER BY sales.customer_id;
 ````
 
 #### Reasoning
@@ -355,25 +355,29 @@ From the query above, we see that customer A earned 1370 points in the month of 
 
 ### Join All The Things - Recreate the table with: customer_id, order_date, product_name, price, member (Y/N)
 
+![image](https://user-images.githubusercontent.com/130705459/233209853-7d35d735-af0c-416b-b321-3134f405928e.png)
+
+
 ````sql
-SELECT s.customer_id, s.order_date, m.product_name, m.price,
-   CASE
-      WHEN mm.join_date > s.order_date THEN 'N'
-      WHEN mm.join_date <= s.order_date THEN 'Y'
-      ELSE 'N'
-      END AS member
-FROM sales AS s
-LEFT JOIN menu AS m
-   ON s.product_id = m.product_id
-LEFT JOIN members AS mm
-   ON s.customer_id = mm.customer_id;
+SELECT sales.customer_id, order_date, product_name, price,
+CASE
+WHEN order_date < join_date THEN 'N'
+WHEN join_date IS NULL THEN 'N'
+ELSE 'Y'
+END AS member
+FROM sales
+LEFT JOIN members
+ON sales.customer_id = members.customer_id
+JOIN menu
+ON sales.product_id = menu.product_id
+ORDER BY sales.customer_id , order_date , product_name;
  ````
  
-#### Answer: 
+#### Solution: 
 | customer_id | order_date | product_name | price | member |
 | ----------- | ---------- | -------------| ----- | ------ |
-| A           | 2021-01-01 | sushi        | 10    | N      |
 | A           | 2021-01-01 | curry        | 15    | N      |
+| A           | 2021-01-01 | sushi        | 10    | N      |
 | A           | 2021-01-07 | curry        | 15    | Y      |
 | A           | 2021-01-10 | ramen        | 12    | Y      |
 | A           | 2021-01-11 | ramen        | 12    | Y      |
@@ -388,38 +392,50 @@ LEFT JOIN members AS mm
 | C           | 2021-01-01 | ramen        | 12    | N      |
 | C           | 2021-01-07 | ramen        | 12    | N      |
 
+#### Reasoning
+- Use a **CASE** statement that creates the member column of the table - identify the cases when a customer is not a member, such as ```order_date``` is less than ```join_date```, and when ```join_date``` is null
+- A **LEFT JOIN** is used on the ```members``` table instead of **JOIN** as all customers need to be present in the table, and customer C does not exist in the ```members``` table. A regular **JOIN** would not return customer C as it does not exist in the ```members``` table
+- **JOIN** the menu table to get ```product_name``` and ```price``` columns, and then use an **ORDER BY** function to organize the table to match the example
+
 ***
 
 ### Rank All The Things - Danny also requires further information about the ```ranking``` of customer products, but he purposely does not need the ranking for non-member purchases so he expects null ```ranking``` values for the records when customers are not yet part of the loyalty program.
 
+![image](https://user-images.githubusercontent.com/130705459/233215428-20ea6a85-408a-45b8-89f2-2f972ed1d21c.png)
+
+
 ````sql
-WITH summary_cte AS 
+WITH ranks_cte AS
 (
-   SELECT s.customer_id, s.order_date, m.product_name, m.price,
-      CASE
-      WHEN mm.join_date > s.order_date THEN 'N'
-      WHEN mm.join_date <= s.order_date THEN 'Y'
-      ELSE 'N' END AS member
-   FROM sales AS s
-   LEFT JOIN menu AS m
-      ON s.product_id = m.product_id
-   LEFT JOIN members AS mm
-      ON s.customer_id = mm.customer_id
+    SELECT sales.customer_id, order_date, product_name, price,
+    CASE
+    WHEN order_date < join_date THEN 'N'
+    WHEN join_date IS NULL THEN 'N'
+    ELSE 'Y'
+    END AS member
+    from sales
+    LEFT JOIN members
+    ON sales.customer_id = members.customer_id
+    JOIN menu
+    ON sales.product_id = menu.product_id
+    ORDER BY sales.customer_id , order_date , product_name
 )
 
-SELECT *, CASE
-   WHEN member = 'N' then NULL
-   ELSE
-      RANK () OVER(PARTITION BY customer_id, member
-      ORDER BY order_date) END AS ranking
-FROM summary_cte;
+SELECT *,
+CASE
+WHEN member = 'N' THEN NULL
+ELSE
+DENSE_RANK() OVER(PARTITION BY sales.customer_id, member
+ORDER BY order_date)
+END AS ranking
+FROM ranks_cte;
 ````
 
-#### Answer: 
+#### Solution: 
 | customer_id | order_date | product_name | price | member | ranking | 
 | ----------- | ---------- | -------------| ----- | ------ |-------- |
-| A           | 2021-01-01 | sushi        | 10    | N      | NULL
 | A           | 2021-01-01 | curry        | 15    | N      | NULL
+| A           | 2021-01-01 | sushi        | 10    | N      | NULL
 | A           | 2021-01-07 | curry        | 15    | Y      | 1
 | A           | 2021-01-10 | ramen        | 12    | Y      | 2
 | A           | 2021-01-11 | ramen        | 12    | Y      | 3
@@ -434,6 +450,10 @@ FROM summary_cte;
 | C           | 2021-01-01 | ramen        | 12    | N      | NULL
 | C           | 2021-01-07 | ramen        | 12    | N      | NULL
 
+#### Reasoning
+- Since the ranking is based off member status and ```order_date```, the query in the previous bonus question can be used and put into a CTE
+- Create a **CASE** statement that returns **NULL** when member status is equal to N - all other results are ranked
+- To rank the other results, a **DENSE_RANK** function is used, seperated by ```customer_id``` and the ```member``` column from the CTE, and ranked by ```order_date``` ascending
 
 ***
 
